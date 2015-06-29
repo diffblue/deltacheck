@@ -49,7 +49,7 @@ class optionst;
   "(show-locs)(show-vcc)(show-properties)(show-trace)(show-fixed-points)(show-stats)" \
   "(show-goto-functions)(show-guards)(show-defs)(show-ssa)(show-assignments)" \
   "(show-value-sets)" \
-  "(show-invariants)" \
+  "(show-invariants)(std-invariants)" \
   "(show-calling-contexts):" \
   "(property):(all-properties)(k-induction)(incremental-bmc)" \
   "(no-simplify)(no-fixed-point)" \

@@ -202,12 +202,18 @@ void summarizer_parse_optionst::get_command_line_options(optionst &options)
   else
     options.set_option("assumptions", true);
 
-    // use arithmetic refinements
+  // use arithmetic refinements
   if(cmdline.isset("refine"))
     options.set_option("refine", true);
   else
     options.set_option("refine", false);
-  
+
+  // compute standard invariants (include value at loop entry)
+  if(cmdline.isset("std-invariants"))
+    options.set_option("std-invariants", true);
+  else
+    options.set_option("std-invariants", false);
+
   // magic error label
   if(cmdline.isset("error-label"))
     options.set_option("error-label", cmdline.get_value("error-label"));
@@ -215,7 +221,10 @@ void summarizer_parse_optionst::get_command_line_options(optionst &options)
   if(cmdline.isset("havoc"))
     options.set_option("havoc", true);
   else if(cmdline.isset("equalities"))
+  {
     options.set_option("equalities", true);
+    options.set_option("std-invariants", true);
+  }
   else 
   {
     if(cmdline.isset("zones"))
@@ -250,6 +259,7 @@ void summarizer_parse_optionst::get_command_line_options(optionst &options)
  // do k-induction refinement
   if(cmdline.isset("k-induction"))
   {
+    options.set_option("std-invariants", true);
     options.set_option("k-induction", true);
     options.set_option("inline", true);
     if(!cmdline.isset("unwind"))
