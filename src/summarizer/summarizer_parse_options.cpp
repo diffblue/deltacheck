@@ -40,6 +40,8 @@ Author: Daniel Kroening, kroening@kroening.com
 #include <cbmc/version.h>
 #include "version.h"
 
+#include "../ssa/malloc_ssa.h"
+
 #include "summarizer_parse_options.h"
 #include "summary_db.h"
 #include "summary_checker_ai.h"
@@ -332,7 +334,7 @@ int summarizer_parse_optionst::doit()
     std::cout << SUMMARIZER_VERSION " (based on CBMC " CBMC_VERSION ")" << std::endl;
     return 0;
   }
-
+    
   //
   // command line options
   //
@@ -355,6 +357,11 @@ int summarizer_parse_optionst::doit()
   if(get_goto_program(options, goto_model))
     return 6;
 
+#if 0
+  //TODO: find a better place for that
+  replace_malloc(goto_model,"");
+#endif
+  
   // options for various debug outputs
     
   if(cmdline.isset("show-ssa"))
@@ -447,7 +454,7 @@ int summarizer_parse_optionst::doit()
     else assert(false);
     status() << eom;
   }
-
+  
   try
   {
     summary_checker_baset *summary_checker = NULL;

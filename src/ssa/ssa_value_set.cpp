@@ -102,7 +102,7 @@ void ssa_value_domaint::assign_lhs_rec(
   const namespacet &ns,
   bool add)
 {
-  #if 0
+  #if 1
   std::cout << "assign_lhs_rec lhs: " << from_expr(ns, "", lhs) << '\n';
   std::cout << "assign_lhs_rec rhs: " << from_expr(ns, "", rhs) << '\n';
   #endif
@@ -148,6 +148,10 @@ void ssa_value_domaint::assign_lhs_rec(
       else
         lhs_values=tmp_values;
 
+#if 1
+      std::cout << "value_set: "; lhs_values.output(std::cout,ns); std::cout << std::endl;
+#endif
+  
       if(lhs_values.empty())
         value_map.erase(ssa_object);
     }

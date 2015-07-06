@@ -58,7 +58,7 @@ void summary_checker_baset::SSA_functions(const goto_modelt &goto_model,  const 
     if(!f_it->second.body_available) continue;
     if(has_prefix(id2string(f_it->first),TEMPLATE_DECL)) continue;
     status() << "Computing SSA of " << f_it->first << messaget::eom;
-   
+    
     ssa_db.create(f_it->first, f_it->second, ns);
     local_SSAt &SSA = ssa_db.get(f_it->first);
     

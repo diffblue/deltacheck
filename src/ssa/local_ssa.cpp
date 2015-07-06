@@ -6,7 +6,7 @@ Author: Daniel Kroening, kroening@kroening.com
 
 \*******************************************************************/
 
-//#define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
 #include <iostream>
@@ -459,7 +459,7 @@ void local_SSAt::build_transfer(locationt loc)
   
 /*******************************************************************\
 
-Function: local_SSAt::build_transfer
+Function: local_SSAt::build_function_call
 
   Inputs:
 
@@ -1449,8 +1449,10 @@ void local_SSAt::nodet::output(
 {
   if(!enabling_expr.is_true()) 
     out << "(enable) " << from_expr(ns, "", enabling_expr) << "\n";
+#if 0
   if(!marked) 
     out << "(not marked)" << "\n";
+#endif
   for(equalitiest::const_iterator
       e_it=equalities.begin();
       e_it!=equalities.end();

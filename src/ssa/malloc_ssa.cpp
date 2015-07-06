@@ -6,6 +6,8 @@ Author: Daniel Kroening, kroening@kroening.com
 
 \*******************************************************************/
 
+#include <iostream>
+
 #include <util/std_types.h>
 #include <util/std_expr.h>
 #include <util/arith_tools.h>
@@ -116,13 +118,17 @@ exprt malloc_ssa(
   
   // value
   symbolt value_symbol;
-
+  
   value_symbol.base_name="dynamic_object"+suffix;
   value_symbol.name="ssa::"+id2string(value_symbol.base_name);
   value_symbol.is_lvalue=true;
   value_symbol.type=object_type;
   value_symbol.type.set("#dynamic", true);
   value_symbol.mode=ID_C;
+
+#if 1
+  std::cout << "MALLOC: " << value_symbol.base_name << std::endl;
+#endif
 
   address_of_exprt address_of;
   
@@ -148,3 +154,33 @@ exprt malloc_ssa(
   return result;
 }
 
+
+#if 0
+void replace_malloc_rec(exprt &expr,
+         		const std::string &suffix,
+			const namespacet &ns)
+{
+  if(expr.id()==ID_side_effect &&
+     to_side_effect_expr(expr).get_statement()==ID_malloc)
+    expr = malloc_ssa(to_side_effect_expr(expr),suffix,ns);
+  else
+    Forall_operands(it,expr)
+      replace_malloc_rec(*it,suffix,ns);
+}
+
+void replace_malloc(goto_modelt &goto_model,
+		    const std::string &suffix)
+{
+  namespacet ns(goto_model.symbol_table);
+  Forall_goto_functions(f_it, goto_model.goto_functions)
+  {
+    Forall_goto_program_instructions(i_it, f_it->second.body)
+    {
+      if(i_it->is_assign())
+      {
+        replace_malloc_rec(to_code_assign(i_it->code).rhs(),suffix,ns);
+      }
+    }
+  }
+}
+#endif
