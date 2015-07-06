@@ -357,11 +357,12 @@ int summarizer_parse_optionst::doit()
   if(get_goto_program(options, goto_model))
     return 6;
 
-#if 0
-  //TODO: find a better place for that
-  replace_malloc(goto_model,"");
-#endif
-  
+  if(cmdline.isset("show-stats"))
+  {
+    show_stats(goto_model, std::cout);
+    return 7;
+  }
+
   // options for various debug outputs
     
   if(cmdline.isset("show-ssa"))
@@ -407,13 +408,6 @@ int summarizer_parse_optionst::doit()
     show_value_sets(goto_model, function, std::cout, ui_message_handler);
     return 7;
   }
-
-  if(cmdline.isset("show-stats"))
-  {
-    show_stats(goto_model, std::cout);
-    return 7;
-  }
-
 
   if(cmdline.isset("show-invariants")) 
   {
@@ -989,6 +983,11 @@ bool summarizer_parse_optionst::process_goto_program(
     {
       inline_main(goto_model); 
     }
+
+#if 1
+  //TODO: find a better place for that
+  replace_malloc(goto_model,"");
+#endif
 
 #if PROPAGATE_CONSTANTS
     propagate_constants(goto_model);

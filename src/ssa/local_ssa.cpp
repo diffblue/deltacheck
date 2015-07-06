@@ -6,7 +6,7 @@ Author: Daniel Kroening, kroening@kroening.com
 
 \*******************************************************************/
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #include <iostream>
@@ -337,6 +337,10 @@ void local_SSAt::build_phi_nodes(locationt loc)
       phi_nodes.find(o_it->get_identifier());
           
     if(p_it==phi_nodes.end()) continue; // none
+
+ #ifdef DEBUG
+      std::cout << "PHI " << o_it->get_identifier() << "\n";
+ #endif
     
     //ignore custom template variables
     if(id2string(o_it->get_identifier()).
@@ -867,12 +871,21 @@ exprt local_SSAt::read_lhs(
   // dereference first
   exprt tmp1=dereference(expr, loc);
 
+#ifdef DEBUG
+  std::cout << "read_lhs tmp1: " << from_expr(ns, "", tmp1) << '\n';
+#endif
+ 
   ssa_objectt object(tmp1, ns);
 
   // is this an object we track?
   if(ssa_objects.objects.find(object)!=
      ssa_objects.objects.end())
   {
+ 
+#ifdef DEBUG
+    std::cout << from_expr(ns, "", tmp1) << "is_object" << '\n';
+#endif
+ 
     // yes, it is
     if(assignments.assigns(loc, object))
       return name(object, OUT, loc);
@@ -1196,6 +1209,10 @@ symbol_exprt local_SSAt::name(
                   i2string(cnt)+
                   (kind==LOOP_SELECT?std::string(""):suffix);
 
+#ifdef DEBUG
+  std::cout << "name " << kind << ": " << new_id << '\n';
+#endif
+
   new_symbol_expr.set_identifier(new_id);
   
   if(object.get_expr().source_location().is_not_nil())
@@ -1477,7 +1494,7 @@ void local_SSAt::nodet::output(
       f_it++)
     out << "(F) " << from_expr(ns, "", *f_it) << "\n";
   
-#if 1
+#if 0
   if(!assertions_after_loop.empty()) 
     out << "(assertions-after-loop) "
 	<< from_expr(ns, "", conjunction(assertions_after_loop)) << "\n";

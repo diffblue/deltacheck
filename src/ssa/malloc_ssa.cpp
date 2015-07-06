@@ -126,10 +126,6 @@ exprt malloc_ssa(
   value_symbol.type.set("#dynamic", true);
   value_symbol.mode=ID_C;
 
-#if 1
-  std::cout << "MALLOC: " << value_symbol.base_name << std::endl;
-#endif
-
   address_of_exprt address_of;
   
   if(object_type.id()==ID_array)
@@ -155,17 +151,22 @@ exprt malloc_ssa(
 }
 
 
-#if 0
+#if 1
 void replace_malloc_rec(exprt &expr,
          		const std::string &suffix,
-			const namespacet &ns)
+			const namespacet &ns,
+                        const exprt &malloc_size)
 {
   if(expr.id()==ID_side_effect &&
      to_side_effect_expr(expr).get_statement()==ID_malloc)
+  {
+    assert(!malloc_size.is_nil());
+    expr.op0() = malloc_size;
     expr = malloc_ssa(to_side_effect_expr(expr),suffix,ns);
+  }
   else
     Forall_operands(it,expr)
-      replace_malloc_rec(*it,suffix,ns);
+      replace_malloc_rec(*it,suffix,ns,malloc_size);
 }
 
 void replace_malloc(goto_modelt &goto_model,
@@ -174,11 +175,22 @@ void replace_malloc(goto_modelt &goto_model,
   namespacet ns(goto_model.symbol_table);
   Forall_goto_functions(f_it, goto_model.goto_functions)
   {
+    exprt malloc_size = nil_exprt();
     Forall_goto_program_instructions(i_it, f_it->second.body)
     {
       if(i_it->is_assign())
       {
-        replace_malloc_rec(to_code_assign(i_it->code).rhs(),suffix,ns);
+        code_assignt &code_assign = to_code_assign(i_it->code);
+	if(code_assign.lhs().id()==ID_symbol)
+	{
+          // we have to propagate the malloc size 
+          //   in order to get the object type
+	  const irep_idt &lhs_id = 
+	    to_symbol_expr(code_assign.lhs()).get_identifier();
+	  if(lhs_id == "malloc::malloc_size")
+	    malloc_size = code_assign.rhs();
+	}
+        replace_malloc_rec(code_assign.rhs(),suffix,ns,malloc_size);
       }
     }
   }

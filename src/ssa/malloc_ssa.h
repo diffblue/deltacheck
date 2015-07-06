@@ -18,7 +18,7 @@ exprt malloc_ssa(
   const namespacet &);
 
 
-#if 0
+#if 1
 void replace_malloc(goto_modelt &goto_model,
 		    const std::string &suffix);
 #endif

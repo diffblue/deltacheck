@@ -6,6 +6,13 @@ Author: Daniel Kroening, kroening@kroening.com
 
 \*******************************************************************/
 
+//#define DEBUG
+
+#ifdef DEBUG
+#include <iostream>
+#include <langapi/language_util.h>
+#endif
+
 #include <util/expr_util.h>
 
 #include <analyses/dirty.h>
@@ -96,6 +103,11 @@ void collect_objects_rec(
   std::set<ssa_objectt> &objects,
   std::set<exprt> &literals)
 {
+
+ #ifdef DEBUG
+  std::cout << "COLLECT " << from_expr(ns,"",src) << "\n";
+ #endif
+
   if(src.id()==ID_code)
   {
     forall_operands(it, src)
@@ -116,7 +128,7 @@ void collect_objects_rec(
     return;
 
   ssa_objectt ssa_object(src, ns);
-  
+
   if(ssa_object)
   {
     if(type.id()==ID_struct)
@@ -136,7 +148,14 @@ void collect_objects_rec(
       }
     }
     else
+    {
+
+ #ifdef DEBUG
+      std::cout << "OBJECT " << ssa_object.get_identifier() << "\n";
+ #endif
+
       objects.insert(ssa_object);
+    }
   }
   else
   {
