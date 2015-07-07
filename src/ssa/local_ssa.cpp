@@ -782,7 +782,7 @@ void local_SSAt::assertions_after_loop()
       assert(!loopheads.empty());
       loopheads.push_back(n_it->loophead);
     }
-    if(!n_it->assertions.empty())
+    if(!n_it->assertions.empty() && !loopheads.empty())
     {
       exprt::operandst &a = assertion_map[loopheads.back()->location];
       a.insert(a.end(),n_it->assertions.begin(),n_it->assertions.end());
