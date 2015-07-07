@@ -152,10 +152,16 @@ void local_SSAt::get_globals(locationt loc, std::set<symbol_exprt> &globals,
            id2string(returns_for_function)+"#return_value")==std::string::npos)
 	 continue;
 
-      if(rhs_value) 
-        globals.insert(to_symbol_expr(read_rhs(it->get_expr(),loc)));
+      if(rhs_value)
+      {
+	const exprt &expr = read_rhs(it->get_expr(),loc);
+        globals.insert(to_symbol_expr(expr));
+      }
       else
-        globals.insert(to_symbol_expr(read_lhs(it->get_expr(),loc)));
+      {
+	const exprt &expr = read_lhs(it->get_expr(),loc);
+        globals.insert(to_symbol_expr(expr));
+      }
     }
   }
 }   
@@ -1166,11 +1172,12 @@ void local_SSAt::replace_side_effects_rec(
     }
     else if(statement==ID_malloc)
     {
-      counter++;
+      assert(false);
+/*      counter++;
       std::string tmp_suffix=
         i2string(loc->location_number)+
         "."+i2string(counter)+suffix;
-      expr=malloc_ssa(side_effect_expr, tmp_suffix, ns);
+	expr=malloc_ssa(side_effect_expr, tmp_suffix, ns);*/
     }
     else
     {

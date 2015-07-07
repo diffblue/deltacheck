@@ -61,6 +61,10 @@ void collect_objects_address_of_rec(
   std::set<ssa_objectt> &objects,
   std::set<exprt> &literals)
 {
+#ifdef DEBUG
+  std::cout << "COLLECT ADDRESS OF " << from_expr(ns,"",src) << "\n";
+#endif
+  
   if(src.id()==ID_index)
   {
     collect_objects_address_of_rec(
@@ -82,6 +86,11 @@ void collect_objects_address_of_rec(
   else if(src.id()==ID_string_constant)
   {
     literals.insert(src);
+  }
+  else if(src.id()==ID_symbol)
+  {
+    collect_objects_rec(
+      src, ns, objects, literals);
   }
 }
 
@@ -266,6 +275,11 @@ void ssa_objectst::categorize_objects(
       o_it++)
   {
     exprt root_object=o_it->get_root_object();
+
+#ifdef DEBUG
+    std::cout << "CATEGORIZE " << from_expr(ns,"",root_object) << "\n";
+#endif
+
     if(root_object.id()==ID_symbol)
     {
       if(is_ptr_object(root_object))

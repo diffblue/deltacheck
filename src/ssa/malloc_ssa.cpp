@@ -13,6 +13,7 @@ Author: Daniel Kroening, kroening@kroening.com
 #include <util/arith_tools.h>
 #include <util/expr_util.h>
 #include <util/symbol.h>
+#include <util/i2string.h>
 #include <util/pointer_offset_size.h>
 
 #include <ansi-c/c_types.h>
@@ -66,11 +67,12 @@ Function: malloc_ssa
 exprt malloc_ssa(
   const side_effect_exprt &code,
   const std::string &suffix,
-  const namespacet &ns)
+  symbol_tablet &symbol_table)
 {
   if(code.operands().size()!=1)
     throw "malloc expected to have one operand";
-    
+
+  namespacet ns(symbol_table);
   exprt size=code.op0();
   typet object_type=nil_typet();
   
@@ -125,6 +127,7 @@ exprt malloc_ssa(
   value_symbol.type=object_type;
   value_symbol.type.set("#dynamic", true);
   value_symbol.mode=ID_C;
+  symbol_table.add(value_symbol);
 
   address_of_exprt address_of;
   
@@ -152,27 +155,28 @@ exprt malloc_ssa(
 
 
 #if 1
-void replace_malloc_rec(exprt &expr,
+static void replace_malloc_rec(exprt &expr,
          		const std::string &suffix,
-			const namespacet &ns,
-                        const exprt &malloc_size)
+			symbol_tablet &symbol_table,
+                        const exprt &malloc_size,
+                        unsigned &counter)
 {
   if(expr.id()==ID_side_effect &&
      to_side_effect_expr(expr).get_statement()==ID_malloc)
   {
     assert(!malloc_size.is_nil());
     expr.op0() = malloc_size;
-    expr = malloc_ssa(to_side_effect_expr(expr),suffix,ns);
+    expr = malloc_ssa(to_side_effect_expr(expr),"$"+i2string(counter++)+suffix,symbol_table);
   }
   else
     Forall_operands(it,expr)
-      replace_malloc_rec(*it,suffix,ns,malloc_size);
+      replace_malloc_rec(*it,suffix,symbol_table,malloc_size,counter);
 }
 
 void replace_malloc(goto_modelt &goto_model,
 		    const std::string &suffix)
 {
-  namespacet ns(goto_model.symbol_table);
+  unsigned counter = 0;
   Forall_goto_functions(f_it, goto_model.goto_functions)
   {
     exprt malloc_size = nil_exprt();
@@ -190,7 +194,8 @@ void replace_malloc(goto_modelt &goto_model,
 	  if(lhs_id == "malloc::malloc_size")
 	    malloc_size = code_assign.rhs();
 	}
-        replace_malloc_rec(code_assign.rhs(),suffix,ns,malloc_size);
+        replace_malloc_rec(code_assign.rhs(),suffix,
+			   goto_model.symbol_table,malloc_size,counter);
       }
     }
   }

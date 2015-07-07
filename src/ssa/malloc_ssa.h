@@ -15,7 +15,7 @@ Author: Daniel Kroening, kroening@kroening.com
 exprt malloc_ssa(
   const side_effect_exprt &,
   const std::string &suffix,
-  const namespacet &);
+  symbol_tablet &);
 
 
 #if 1
