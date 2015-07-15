@@ -86,6 +86,14 @@ exprt malloc_ssa(
         c_sizeof_type_rec(size.op0()),
         size.op1());      
     }
+    else if(size.id()==ID_mult &&
+       size.operands().size()==2 &&
+       size.op1().find(ID_C_c_sizeof_type).is_not_nil())
+    {
+      object_type=array_typet(
+        c_sizeof_type_rec(size.op1()),
+        size.op0());      
+    }
     else
     {
       typet tmp_type=c_sizeof_type_rec(size);
@@ -117,6 +125,8 @@ exprt malloc_ssa(
     if(object_type.is_nil())
       object_type=array_typet(unsigned_char_type(), size);
   }
+
+  std::cout << "OBJECT_TYPE: " << from_type(ns, "", object_type) << std::endl;
   
   // value
   symbolt value_symbol;
@@ -154,7 +164,6 @@ exprt malloc_ssa(
 }
 
 
-#if 1
 static void replace_malloc_rec(exprt &expr,
          		const std::string &suffix,
 			symbol_tablet &symbol_table,
@@ -200,4 +209,4 @@ void replace_malloc(goto_modelt &goto_model,
     }
   }
 }
-#endif
+
