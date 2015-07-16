@@ -9,6 +9,8 @@ Author: Peter Schrammel
 #ifndef CPROVER_CONST_PROPAGATOR_H
 #define CPROVER_CONST_PROPAGATOR_H
 
+#include <iostream>
+
 #include <analyses/ai.h>
 #include <util/replace_symbol.h>
 
@@ -24,6 +26,7 @@ public:
   public:
     // maps variables to constants
     replace_symbolt replace_const;
+    std::set<irep_idt> top_ids;
     
     void output(std::ostream &, const namespacet &) const;
     
@@ -33,32 +36,38 @@ public:
     {
       replace_const.expr_map.clear();
       replace_const.type_map.clear();
+      top_ids.clear();
     }
     
     bool empty() const
     {
       return replace_const.expr_map.empty() && 
-	replace_const.type_map.empty();
+	replace_const.type_map.empty() &&
+	top_ids.empty();
     }
-  };
 
-  const valuest operator()(const exprt &src, const namespacet &ns) const
-  {
-    valuest tmp;
-    assign(tmp, src, ns);
-    return tmp;
-  }
+    void set_to(const exprt &lhs, const exprt &rhs_val);
+    void set_to(const irep_idt &lhs_id, const exprt &rhs_val);
+    
+    bool maps_to_top(const exprt &expr) const;
+    bool set_to_top(const exprt &expr);
+    bool set_to_top(const irep_idt &id);
+    void set_all_to_top();
+  };
 
   valuest values;
   
 protected:
   void assign(
-    valuest &dest, const exprt &src, 
-    const namespacet &) const;
+    valuest &dest,
+    const exprt &lhs,
+    exprt rhs,
+    const namespacet &ns) const;
 
-  exprt evaluate_casts_in_constants(const exprt &expr, 
-				    const typet& parent_type, 
-				    bool &valid);
+  exprt evaluate_casts_in_constants(
+    exprt expr, 
+    const typet& parent_type, 
+    bool &valid) const;
 
 };
 
@@ -70,6 +79,7 @@ public:
     const namespacet &ns)
   {
     operator()(goto_function, ns);
+//    output(ns,goto_function.body,"",std::cout);
     replace(goto_function, ns);
   }
 

@@ -175,6 +175,7 @@ static void replace_malloc_rec(exprt &expr,
   {
     assert(!malloc_size.is_nil());
     expr.op0() = malloc_size;
+ 
     expr = malloc_ssa(to_side_effect_expr(expr),"$"+i2string(counter++)+suffix,symbol_table);
   }
   else
@@ -198,6 +199,7 @@ void replace_malloc(goto_modelt &goto_model,
 	{
           // we have to propagate the malloc size 
           //   in order to get the object type
+	  // TODO: this only works with inlining
 	  const irep_idt &lhs_id = 
 	    to_symbol_expr(code_assign.lhs()).get_identifier();
 	  if(lhs_id == "malloc::malloc_size")

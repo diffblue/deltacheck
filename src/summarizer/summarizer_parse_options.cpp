@@ -51,7 +51,6 @@ Author: Daniel Kroening, kroening@kroening.com
 #include "show.h"
 
 #define UNWIND_GOTO_INTO_LOOP 1
-#define PROPAGATE_CONSTANTS 1
 #define REMOVE_MULTIPLE_DEREFERENCES 1
 
 /*******************************************************************\
@@ -984,10 +983,12 @@ bool summarizer_parse_optionst::process_goto_program(
       inline_main(goto_model); 
     }
 
-#if PROPAGATE_CONSTANTS
-    propagate_constants(goto_model);
-#endif
-
+    if(!cmdline.isset("no-propagation"))
+    {
+      status() << "Constant Propagation" << eom;
+      propagate_constants(goto_model);
+    }
+	
 #if 1
   //TODO: find a better place for that
   replace_malloc(goto_model,"");

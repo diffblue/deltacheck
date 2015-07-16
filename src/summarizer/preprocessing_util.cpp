@@ -3,6 +3,8 @@
 #include <util/arith_tools.h>
 #include <goto-instrument/unwind.h>
 
+#include "../ssa/const_propagator.h"
+
 #include "summarizer_parse_options.h"
 
 /*******************************************************************\
@@ -66,6 +68,16 @@ Function: summarizer_parse_optionst::propagate_constants
 
 \*******************************************************************/
 
+void summarizer_parse_optionst::propagate_constants(goto_modelt &goto_model)
+{
+  namespacet ns(goto_model.symbol_table);
+  Forall_goto_functions(f_it, goto_model.goto_functions)
+  {
+    const_propagator_ait(f_it->second,ns);
+  }
+}
+
+#if 0
 void summarizer_parse_optionst::replace_types_rec(const replace_symbolt &replace_const, 
 						 exprt &expr)
 {
@@ -145,6 +157,7 @@ void summarizer_parse_optionst::propagate_constants(goto_modelt &goto_model)
     }
   }
 }
+#endif
 
 /*******************************************************************\
 

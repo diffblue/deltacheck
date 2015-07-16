@@ -6,6 +6,8 @@ Author: Peter Schrammel
 
 \*******************************************************************/
 
+//#define DEBUG
+
 #include <iostream>
 
 #include <util/find_symbols.h>
@@ -31,23 +33,65 @@ void const_propagator_domaint::transform(
   ai_baset &ai,
   const namespacet &ns)
 {
-#if 0
-  if(from->is_assign())
+#ifdef DEBUG
+  std::cout << from->location_number << " --> "
+	    << to->location_number << std::endl;
+#endif
+  
+  if(from->is_decl())
+  {
+    values.set_to_top(to_code_decl(from->code).symbol());
+  }
+  else if(from->is_assign())
   {
     const code_assignt &assignment=to_code_assign(from->code);
-    assign_rhs_rec(lhs_deref, rhs_deref, ns);
+    const exprt &lhs = assignment.lhs();
+    const exprt &rhs = assignment.rhs();
+    if(lhs.id()==ID_symbol)
+    {
+      if(!values.maps_to_top(rhs))
+        assign(values,lhs,rhs,ns);
+      else
+        values.set_to_top(lhs);
+    }
   }
   else if(from->is_goto())
   {
-    // Perhaps look at condition, for stuff like
-    // p!=0 or the like.
-    //exprt cond_deref=dereference(from->guard, *this, "", ns);
+    if(from->guard.id()==ID_equal && from->get_target()==to)
+    {
+      const exprt &lhs = from->guard.op0(); 
+      const exprt &rhs = from->guard.op1();
+
+      //TODO: there could be nasty typecasts
+      if(lhs.id()==ID_symbol && !values.maps_to_top(rhs))
+	assign(values,lhs,rhs,ns);
+      else if(rhs.id()==ID_symbol && !values.maps_to_top(lhs))
+	assign(values,rhs,lhs,ns);    
+    }
+    else if(from->guard.id()==ID_notequal && from->get_target()!=to)
+    {
+      const exprt &lhs = from->guard.op0(); 
+      const exprt &rhs = from->guard.op1();
+
+      //TODO: there could be nasty typecasts
+      if(lhs.id()==ID_symbol && !values.maps_to_top(rhs))
+	assign(values,lhs,rhs,ns);
+      else if(rhs.id()==ID_symbol && !values.maps_to_top(lhs))
+	assign(values,rhs,lhs,ns);
+    }
   }
   else if(from->is_dead())
   {
     const code_deadt &code_dead=to_code_dead(from->code);
-    assign_lhs_rec(code_dead.symbol(), nil_exprt(), ns);
+    values.set_to_top(code_dead.symbol());
   }
+  else if(from->is_function_call())
+  {
+    values.set_all_to_top();
+  }
+
+#ifdef DEBUG
+  output(std::cout,ai,ns);
 #endif
 }
 
@@ -65,27 +109,119 @@ Function: const_propagator_domaint::assign_rhs_rec
 
 void const_propagator_domaint::assign(
   valuest &dest,
-  const exprt &src,
+  const exprt &lhs,
+  exprt rhs,
   const namespacet &ns) const
 {
-#if 1
-  std::cout << "assign: " << from_expr(ns, "", src) << '\n';
+#ifdef DEBUG
+  std::cout << "assign: " << from_expr(ns, "", lhs)
+	    << " := " << from_expr(ns, "", rhs) << std::endl;
 #endif
 
-#if 0
- 
-  if(rhs.id()==ID_constant)
+  values.replace_const(rhs);
+
+  bool valid = true;
+  exprt rhs_val = evaluate_casts_in_constants(rhs,lhs.type(),valid);
+  if(valid)
+    dest.set_to(lhs,rhs_val);
+}
+
+/*******************************************************************\
+
+Function: const_propagator_domaint::valuest::maps_to_top
+
+  Inputs:
+
+ Outputs:
+
+ Purpose:
+
+\*******************************************************************/
+
+bool const_propagator_domaint::valuest::maps_to_top(const exprt &expr) const
+{
+  find_symbols_sett symbols;
+  find_symbols(expr,symbols);
+  for(find_symbols_sett::const_iterator it = symbols.begin();
+      it != symbols.end(); ++it)
   {
-    if(to_constant_expr(rhs).get_value()==ID_NULL)
-    {
-      dest.null=true;
-    }
+    if(replace_const.expr_map.find(*it)
+        == replace_const.expr_map.end())
+      return true;
   }
-  else if(rhs.id()==ID_typecast)
+  return false;
+}
+
+/*******************************************************************\
+
+Function: const_propagator_domaint::valuest::set_to_top
+
+  Inputs:
+
+ Outputs:
+
+ Purpose:
+
+\*******************************************************************/
+
+bool const_propagator_domaint::valuest::set_to_top(const irep_idt &id)
+{
+  bool result = false;
+  replace_symbolt::expr_mapt::iterator r_it =
+    replace_const.expr_map.find(id);
+  if(r_it != replace_const.expr_map.end())
   {
-    assign_rhs_rec(dest, to_typecast_expr(rhs).op(), ns, offset, alignment);
+    replace_const.expr_map.erase(r_it);
+    result = true;
   }
-#endif
+  if(top_ids.find(id)==top_ids.end())
+  {
+    top_ids.insert(id);
+    result = true;
+  }
+  return result;
+}
+
+bool const_propagator_domaint::valuest::set_to_top(const exprt &expr)
+{
+  return set_to_top(to_symbol_expr(expr).get_identifier());
+}
+
+void const_propagator_domaint::valuest::set_all_to_top()
+{
+  for(replace_symbolt::expr_mapt::iterator it =
+        replace_const.expr_map.begin();
+      it != replace_const.expr_map.end(); ++it)
+    top_ids.insert(it->first);
+  replace_const.expr_map.clear();
+}
+
+
+/*******************************************************************\
+
+Function: const_propagator_domaint::valuest::add
+
+  Inputs:
+
+ Outputs:
+
+ Purpose:
+
+\*******************************************************************/
+
+void const_propagator_domaint::valuest::set_to(const irep_idt &lhs_id,
+					    const exprt &rhs_val)
+{
+  replace_const.expr_map[lhs_id] = rhs_val;
+  std::set<irep_idt>::iterator it = top_ids.find(lhs_id);
+  if(it!=top_ids.end()) top_ids.erase(it);
+}
+
+void const_propagator_domaint::valuest::set_to(const exprt &lhs,
+					    const exprt &rhs_val)
+{
+  const irep_idt &lhs_id = to_symbol_expr(lhs).get_identifier();
+  set_to(lhs_id,rhs_val);
 }
 
 /*******************************************************************\
@@ -104,12 +240,19 @@ void const_propagator_domaint::valuest::output(
   std::ostream &out,
   const namespacet &ns) const
 {
+  out << "const map: " << std::endl;
   for(replace_symbolt::expr_mapt::const_iterator 
 	it=replace_const.expr_map.begin();
       it!=replace_const.expr_map.end();
       ++it)
     out << ' ' << it->first << "=" <<
       from_expr(ns, "", it->second) << std::endl;
+  out << "top ids: " << std::endl;
+  for(std::set<irep_idt>::const_iterator 
+	it=top_ids.begin();
+      it!=top_ids.end();
+      ++it)
+    out << ' ' << *it << std::endl;
 }
 
 /*******************************************************************\
@@ -157,16 +300,23 @@ bool const_propagator_domaint::valuest::merge(const valuest &src)
     {
       if(c_it->second != it->second)
       {
-        replace_const.expr_map.erase(c_it);
+        set_to_top(it->first);
 	changed = true;
       }
     }
-    else
+    else if(top_ids.find(it->first)==top_ids.end())
     {
-      replace_const.expr_map[it->first] = it->second;
+      set_to(it->first,it->second);
       changed = true;
     }
   }
+  for(std::set<irep_idt>::const_iterator it=src.top_ids.begin();
+      it!=src.top_ids.end(); ++it)
+  {
+    bool c = set_to_top(*it);
+    changed = changed || c;
+  }
+
   return changed;
 }
 
@@ -202,16 +352,23 @@ Function: const_propagator_domaint::evaluate_casts_in_constants
 
 \*******************************************************************/
 
-exprt const_propagator_domaint::evaluate_casts_in_constants(const exprt &expr, 
-		    const typet& parent_type, bool &valid)
+exprt const_propagator_domaint::evaluate_casts_in_constants(exprt expr, 
+		    const typet& parent_type, bool &valid) const
 {
   if(expr.id()==ID_side_effect) valid = false;
-  if(expr.type().id()!=ID_signedbv && expr.type().id()!=ID_unsignedbv) return expr;
-  exprt r = expr;
-  if(expr.id()==ID_typecast) r = evaluate_casts_in_constants(expr.op0(),expr.type(),valid);
-  if(r.id()!=ID_constant) return typecast_exprt(r,parent_type);
+  if(expr.type().id()!=ID_signedbv && expr.type().id()!=ID_unsignedbv)
+    return expr;
+  if(expr.id()==ID_typecast)
+    expr = evaluate_casts_in_constants(expr.op0(),expr.type(),valid);
+  if(expr.id()!=ID_constant)
+  {
+    if(expr.type()!=parent_type)
+      return typecast_exprt(expr,parent_type);
+    else
+      return expr;
+  }
   mp_integer v;
-  to_integer(to_constant_expr(r), v);
+  to_integer(to_constant_expr(expr), v);
   return from_integer(v,parent_type);
 }
 
@@ -236,8 +393,17 @@ void const_propagator_ait::replace(
     state_mapt::iterator s_it = state_map.find(it);
     if(s_it == state_map.end())
       continue;
-    replace_types_rec(s_it->second.values.replace_const,
-		      it->guard);
+    if(it->is_goto() || it->is_assume() || it->is_assert())
+    {
+      s_it->second.values.replace_const(it->guard);
+      replace_types_rec(s_it->second.values.replace_const, it->guard);
+    }
+    else if(it->is_assign())
+    {
+      exprt &rhs = to_code_assign(it->code).rhs();
+      s_it->second.values.replace_const(rhs);
+      replace_types_rec(s_it->second.values.replace_const, rhs);
+    }
   }
 }
 
