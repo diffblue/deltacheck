@@ -989,6 +989,9 @@ bool summarizer_parse_optionst::process_goto_program(
       propagate_constants(goto_model);
     }
 	
+    //explicitly initialize all local variables
+    nondet_locals(goto_model);
+
 #if 1
   //TODO: find a better place for that
   replace_malloc(goto_model,"");
