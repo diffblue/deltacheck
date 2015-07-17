@@ -173,6 +173,8 @@ void summarizer_parse_optionst::goto_unwind(goto_modelt &goto_model, unsigned k)
       t->targets.push_back(iteration_points.front());
     }
   }
+  goto_model.goto_functions.update();
+  goto_model.goto_functions.compute_loop_numbers();
 }
 
 /*******************************************************************\
