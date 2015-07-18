@@ -393,16 +393,24 @@ void const_propagator_ait::replace(
     state_mapt::iterator s_it = state_map.find(it);
     if(s_it == state_map.end())
       continue;
+    replace_types_rec(s_it->second.values.replace_const, it->code);
+    replace_types_rec(s_it->second.values.replace_const, it->guard);
     if(it->is_goto() || it->is_assume() || it->is_assert())
     {
       s_it->second.values.replace_const(it->guard);
-      replace_types_rec(s_it->second.values.replace_const, it->guard);
     }
     else if(it->is_assign())
     {
       exprt &rhs = to_code_assign(it->code).rhs();
       s_it->second.values.replace_const(rhs);
-      replace_types_rec(s_it->second.values.replace_const, rhs);
+    }
+    else if(it->is_function_call())
+    {
+      exprt::operandst &args = 
+	to_code_function_call(it->code).arguments();
+      for(exprt::operandst::iterator o_it = args.begin();
+	  o_it != args.end(); ++o_it)
+        s_it->second.values.replace_const(*o_it);
     }
   }
 }
@@ -424,8 +432,7 @@ void const_propagator_ait::replace_types_rec(
   exprt &expr)
 {
   replace_const(expr.type());
-  for(exprt::operandst::iterator it = expr.operands().begin(); 
-      it!=expr.operands().end();it++)
+  Forall_operands(it,expr)
     replace_types_rec(replace_const,*it);
 }
 
