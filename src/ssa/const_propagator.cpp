@@ -140,6 +140,9 @@ Function: const_propagator_domaint::valuest::maps_to_top
 
 bool const_propagator_domaint::valuest::maps_to_top(const exprt &expr) const
 {
+  if(expr.id()==ID_side_effect && 
+     to_side_effect_expr(expr).get_statement()==ID_nondet) 
+    return true;
   find_symbols_sett symbols;
   find_symbols(expr,symbols);
   for(find_symbols_sett::const_iterator it = symbols.begin();
