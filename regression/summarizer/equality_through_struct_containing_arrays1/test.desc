@@ -1,8 +1,0 @@
-THOROUGH
-main.c
---equalities --arrays
-^EXIT=0$
-^SIGNAL=0$
-^VERIFICATION SUCCESSFUL$
---
-^warning: ignoring
