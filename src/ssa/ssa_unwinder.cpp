@@ -747,6 +747,21 @@ void ssa_local_unwindert::rename(exprt &expr, std::string suffix,
         expr.set(ID_identifier,id);
         return;
   }
+  else if(expr.id()==ID_equal &&
+       expr.operands().size()==2 &&
+       expr.op0().id()==ID_symbol &&
+       expr.op1().id()==ID_nondet_symbol)
+  {
+  // if "y#20 == nondet_symbol(ssa::nondet.#20)"
+    // appears then add 'y' in the vars_modified
+    // to ensure that it is always renamed
+    symbol_exprt s = to_symbol_expr(expr.op0());
+    irep_idt base_id = get_base_name(s.get_identifier());
+    current_loop.vars_modified.insert(base_id);
+
+
+
+  }
 
   for (exprt::operandst::iterator it = expr.operands().begin();
        it != expr.operands().end(); it++) {
