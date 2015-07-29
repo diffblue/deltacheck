@@ -31,6 +31,7 @@ Author: Daniel Kroening, kroening@kroening.com
 #include <goto-programs/goto_functions.h>
 #include <goto-programs/xml_goto_trace.h>
 #include <goto-programs/remove_returns.h>
+#include <goto-programs/remove_skip.h>
 #include "array_abstraction.h"
 
 #include <analyses/goto_check.h>
@@ -946,8 +947,6 @@ bool summarizer_parse_optionst::process_goto_program(
     // remove returns (must be done after function pointer removal)
     remove_returns(goto_model);
     
-    split_loopheads(goto_model);
-
     // recalculate numbers, etc.
     goto_model.goto_functions.update();
 
@@ -969,6 +968,10 @@ bool summarizer_parse_optionst::process_goto_program(
 #if UNWIND_GOTO_INTO_LOOP
     goto_unwind(goto_model,2);
 #endif
+
+    remove_skip(goto_model.goto_functions);
+    goto_model.goto_functions.update();
+    split_loopheads(goto_model);
 
     // now do full inlining, if requested
     if(options.get_bool_option("inline"))
@@ -994,7 +997,7 @@ bool summarizer_parse_optionst::process_goto_program(
 
 #if 1
   //TODO: find a better place for that
-  replace_malloc(goto_model,"");
+    replace_malloc(goto_model,"");
 #endif
 
 #if REMOVE_MULTIPLE_DEREFERENCES
